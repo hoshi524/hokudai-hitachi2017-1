@@ -1,24 +1,17 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-constexpr double TIME_LIMIT = 1800;
-constexpr int MAX_KVV = 6400;
-constexpr int MAX_KV = 60;
-constexpr int MAX_V = 505;
-
-unsigned get_random() {
-  static unsigned y = 2463534242;
-  return y ^= (y ^= (y ^= y << 13) >> 17) << 5;
-}
+constexpr int MAX_ROW = 1 << 5;
+constexpr int MAX_V = 1 << 10;
 
 int V, E, R, KV, KE, KR;
 int s[MAX_V];
 int e[MAX_V][MAX_V];
 int w[MAX_V][MAX_V];
-int X[MAX_KVV];
-int* x = X + MAX_KV;
-int BEST[MAX_KVV];
-int* best = BEST + MAX_KV;
+int X[MAX_V];
+int* x = X + MAX_ROW;
+int BEST[MAX_V];
+int* best = BEST + MAX_ROW;
 int vertexes[MAX_V];
 
 inline int _abs(int v) {
@@ -54,8 +47,8 @@ int main() {
     int score = 0;
     random_device seed_gen;
     mt19937 engine(seed_gen());
-    for (int time = 0; time < 1000; ++time) {
-      for (int i = 0; i < MAX_KVV; ++i) X[i] = V;
+    for (int time = 0; time < 100; ++time) {
+      for (int i = 0; i < MAX_V; ++i) X[i] = V;
       for (int i = 0; i < V; ++i) vertexes[i] = i;
       shuffle(vertexes, vertexes + V, engine);
       int s = 0;
@@ -88,7 +81,7 @@ int main() {
     fprintf(stderr, "score = %d\n", score);
   }
   {  // output
-    for (int i = 0; i < KV; ++i) {
+    for (int i = 0; i < MAX_V; ++i) {
       if (best[i] < V) printf("%d %d\n", best[i] + 1, i / R * KR + i % R + 1);
     }
   }
