@@ -54,16 +54,16 @@ inline unsigned long long int Timer::getCycle() {
 
 Timer timer;
 
-constexpr double TIME_LIMIT = 9.5;
+constexpr double TIME_LIMIT = 2.8;
 constexpr int ROW = 1 << 5;
 constexpr int MAX_V = ROW * ROW;
 
-unsigned get_random() {
+inline unsigned get_random() {
   static unsigned y = 2463534242;
   return y ^= (y ^= (y ^= y << 13) >> 17) << 5;
 }
 
-double get_random_double() { return (double)get_random() / UINT_MAX; }
+inline double get_random_double() { return (double)get_random() / UINT_MAX; }
 
 int V, E, KV, KE, KR;
 uint8_t w[MAX_V][MAX_V];
@@ -108,27 +108,27 @@ int main() {
       v += w[x[p]][x[p + ROW + 1]];
       return v;
     };
-    constexpr int max_time = 0x8000000;
     constexpr int LOG_SIZE = 1 << 12;
-    static double log_[LOG_SIZE];
+    static double log_d[LOG_SIZE];
+    static uint8_t log_[LOG_SIZE];
     for (int i = 0; i < LOG_SIZE; ++i) {
-      log_[i] = -5 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
+      log_d[i] = -5 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
     }
     while (true) {
-      double elapsed = timer.getElapsed();
-      if (elapsed > TIME_LIMIT) break;
-      for (int time = 0; time < 0x10000; ++time) {
-        int p1 = (get_random() % r + 1) * ROW + (get_random() % r + 1);
-        int p2 = (get_random() % r + 1) * ROW + (get_random() % r + 1);
+      double time = TIME_LIMIT - timer.getElapsed();
+      if (time < 0) break;
+      for (int i = 0; i < LOG_SIZE; ++i) {
+        log_[i] = log_d[i] * time;
+      }
+      for (int t = 0; t < 0x10000; ++t) {
+        int p1 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
+        int p2 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
         if (p1 == p2) continue;
         int pv = value(p1) + value(p2);
         swap(x[p1], x[p2]);
         int nv = value(p1) + value(p2);
-        if (nv >= pv || (pv - nv) < log_[get_random() & (LOG_SIZE - 1)] *
-                                        (TIME_LIMIT - elapsed)) {
-        } else {
+        if (nv < pv && (pv - nv) > log_[get_random() & (LOG_SIZE - 1)])
           swap(x[p1], x[p2]);
-        }
       }
     }
   }
