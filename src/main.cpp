@@ -1,25 +1,24 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-constexpr int MAX_ROW = 1 << 5;
+constexpr int ROW = 1 << 5;
+constexpr int CENTOR = ROW / 2 * ROW + ROW / 2;
 constexpr int MAX_V = 1 << 10;
 
-int V, E, R, KV, KE, KR;
+int V, E, KV, KE, KR;
 int s[MAX_V];
-int e[MAX_V][MAX_V];
 int w[MAX_V][MAX_V];
 int X[MAX_V];
-int* x = X + MAX_ROW;
+int* x = X + ROW;
 int BEST[MAX_V];
-int* best = BEST + MAX_ROW;
+int* best = BEST + ROW;
 int vertexes[MAX_V];
+int positions[MAX_V];
 
 inline int _abs(int v) {
   int mask = v >> 31;
   return (v + mask) ^ mask;
 }
-
-inline bool connect(int i, int j) { return _abs(i % R - j % R) < 2; }
 
 int main() {
   {  // input
@@ -32,57 +31,89 @@ int main() {
       if (t) {
         --u;
         --v;
-        e[u][s[u]++] = v;
-        e[v][s[v]++] = u;
         w[u][v] = t;
         w[v][u] = t;
       }
     }
     scanf("%d%d\n", &KV, &KE);
     KR = sqrt(KV);
-    R = sqrt(V);
-    if (R * R < V) ++R;
   }
   {  // solve
-    int score = 0;
+    int bestScore = 0;
     random_device seed_gen;
     mt19937 engine(seed_gen());
     for (int time = 0; time < 100; ++time) {
       for (int i = 0; i < MAX_V; ++i) X[i] = V;
       for (int i = 0; i < V; ++i) vertexes[i] = i;
       shuffle(vertexes, vertexes + V, engine);
-      int s = 0;
+      int score = 0, cd = 0, ps = 0;
       for (int i = 0; i < V; ++i) {
-        int n = 0, v = -1;
+        if (ps == 0) {
+          if (cd == 0) {
+            positions[ps++] = CENTOR;
+          } else {
+            for (int j = 0; j < cd * 2; ++j) {
+              positions[ps++] = CENTOR - cd * ROW - cd + j;
+              positions[ps++] = CENTOR - cd * ROW + cd + j * ROW;
+              positions[ps++] = CENTOR + cd * ROW + cd - j;
+              positions[ps++] = CENTOR + cd * ROW - cd - j * ROW;
+            }
+          }
+          ++cd;
+        }
+        int vi = 0, pi = 0, value = -1;
         for (int j = 0; j < V - i; ++j) {
-          int t = 0;
-          auto add = [&](int i, int j) {
-            if (connect(i, j)) t += w[x[i]][x[j]];
-          };
-          x[i] = vertexes[j];
-          add(i, i - 1);
-          add(i, i - R);
-          add(i, i - R - 1);
-          add(i, i - R + 1);
-          if (v < t) {
-            v = t;
-            n = j;
+          int v = vertexes[j];
+          for (int k = 0; k < ps; ++k) {
+            int p = positions[k];
+            int t = 0;
+            t += w[v][x[p - ROW - 1]];
+            t += w[v][x[p - ROW]];
+            t += w[v][x[p - ROW + 1]];
+            t += w[v][x[p - 1]];
+            t += w[v][x[p + 1]];
+            t += w[v][x[p + ROW - 1]];
+            t += w[v][x[p + ROW]];
+            t += w[v][x[p + ROW + 1]];
+            if (value < t) {
+              value = t;
+              vi = j;
+              pi = k;
+            }
           }
         }
-        x[i] = vertexes[n];
-        vertexes[n] = vertexes[V - i - 1];
-        s += v;
+        x[positions[pi]] = vertexes[vi];
+        vertexes[vi] = vertexes[V - i - 1];
+        positions[pi] = positions[--ps];
+        score += value;
       }
-      if (score < s) {
-        score = s;
+      if (bestScore < score) {
+        bestScore = score;
         memcpy(BEST, X, sizeof(X));
       }
     }
-    fprintf(stderr, "score = %d\n", score);
+    int minRow = ROW;
+    int minCol = ROW;
+    for (int i = 0; i < MAX_V; ++i) {
+      if (best[i] < V) {
+        int r = i & (ROW - 1);
+        int c = i >> 5;
+        if (minRow > r) minRow = r;
+        if (minCol > c) minCol = c;
+      }
+    }
+    for (int i = 0; i < MAX_V; ++i) {
+      if (best[i] < V) {
+        best[i - minCol * ROW - minRow] = best[i];
+        best[i] = V;
+      }
+    }
+    fprintf(stderr, "score = %d\n", bestScore);
   }
   {  // output
     for (int i = 0; i < MAX_V; ++i) {
-      if (best[i] < V) printf("%d %d\n", best[i] + 1, i / R * KR + i % R + 1);
+      if (best[i] < V)
+        printf("%d %d\n", best[i] + 1, i / ROW * KR + i % ROW + 1);
     }
   }
 }
