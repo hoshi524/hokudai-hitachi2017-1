@@ -123,7 +123,7 @@ int main() {
       for (int t = 0; t < 0x10000; ++t) {
         int p1 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
         int p2 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
-        if (p1 == p2) continue;
+        if (x[p1] == x[p2]) continue;
         int pv = value(p1) + value(p2);
         swap(x[p1], x[p2]);
         int nv = value(p1) + value(p2);
