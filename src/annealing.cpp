@@ -67,7 +67,7 @@ inline double get_random_double() { return (double)get_random() / UINT_MAX; }
 
 int V, E, KV, KE, KR;
 uint8_t w[500][500];
-int x[MAX_V];
+uint16_t x[MAX_V];
 
 int main() {
   {  // input
