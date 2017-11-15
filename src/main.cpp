@@ -11,7 +11,7 @@ unsigned get_random() {
   return y ^= (y ^= (y ^= y << 13) >> 17) << 5;
 }
 
-int V, E, KV, KE;
+int V, E, R, KV, KE, KR;
 int s[MAX_V];
 int e[MAX_V][MAX_V];
 int w[MAX_V][MAX_V];
@@ -26,9 +26,7 @@ inline int _abs(int v) {
   return (v + mask) ^ mask;
 }
 
-inline bool connect(int i, int j) {
-  return _abs(i % KV - j % KV) < 2 && _abs(i / KV - j / KV) < 2;
-}
+inline bool connect(int i, int j) { return _abs(i % R - j % R) < 2; }
 
 int main() {
   {  // input
@@ -48,7 +46,9 @@ int main() {
       }
     }
     scanf("%d%d\n", &KV, &KE);
-    KV = sqrt(KV);
+    KR = sqrt(KV);
+    R = sqrt(V);
+    if (R * R < V) ++R;
   }
   {  // solve
     int score = 0;
@@ -67,9 +67,9 @@ int main() {
         };
         x[i] = j;
         add(i, i - 1);
-        add(i, i - KV);
-        add(i, i - KV - 1);
-        add(i, i - KV + 1);
+        add(i, i - R);
+        add(i, i - R - 1);
+        add(i, i - R + 1);
         if (v < t) {
           v = t;
           n = j;
@@ -86,9 +86,8 @@ int main() {
     fprintf(stderr, "score = %d\n", score);
   }
   {  // output
-    KV = KV * KV;
     for (int i = 0; i < KV; ++i) {
-      if (best[i] < V) printf("%d %d\n", best[i] + 1, i + 1);
+      if (best[i] < V) printf("%d %d\n", best[i] + 1, i / R * KR + i % R + 1);
     }
   }
 }
