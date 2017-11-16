@@ -58,20 +58,23 @@ constexpr double TIME_LIMIT = 2.8;
 constexpr int ROW = 1 << 5;
 constexpr int MAX_V = ROW * ROW;
 
-unsigned get_random() {
+inline unsigned get_random() {
   static unsigned y = 2463534242;
   return y ^= (y ^= (y ^= y << 13) >> 17) << 5;
 }
 
-double get_random_double() { return (double)get_random() / UINT_MAX; }
+inline double get_random_double() { return (double)get_random() / UINT_MAX; }
 
 int V, E, KV, KE, KR;
-uint8_t w[MAX_V][MAX_V];
-int x[MAX_V];
+uint8_t W[500][500];
+uint16_t X[MAX_V];
+constexpr int LOG_SIZE = 1 << 12;
+double log_d[LOG_SIZE];
+uint8_t log_[LOG_SIZE];
 
 int main() {
   {  // input
-    memset(w, 0, sizeof(w));
+    memset(W, 0, sizeof(W));
     scanf("%d%d\n", &V, &E);
     int u, v, t;
     for (int i = 0; i < E; ++i) {
@@ -79,8 +82,8 @@ int main() {
       if (t) {
         --u;
         --v;
-        w[u][v] = t;
-        w[v][u] = t;
+        W[u][v] = t;
+        W[v][u] = t;
       }
     }
     scanf("%d%d\n", &KV, &KE);
@@ -90,50 +93,45 @@ int main() {
     int r = sqrt(V);
     if (r * r < V) ++r;
     int n = 0;
-    for (int i = 0; i < MAX_V; ++i) x[i] = V;
+    for (int i = 0; i < MAX_V; ++i) X[i] = V;
     for (int i = 1; i <= r && n < V; ++i) {
       for (int j = 1; j <= r && n < V; ++j) {
-        x[i * ROW + j] = n++;
+        X[i * ROW + j] = n++;
       }
     }
     auto value = [](int p) {
       int v = 0;
-      v += w[x[p]][x[p - ROW - 1]];
-      v += w[x[p]][x[p - ROW]];
-      v += w[x[p]][x[p - ROW + 1]];
-      v += w[x[p]][x[p - 1]];
-      v += w[x[p]][x[p + 1]];
-      v += w[x[p]][x[p + ROW - 1]];
-      v += w[x[p]][x[p + ROW]];
-      v += w[x[p]][x[p + ROW + 1]];
+      v += W[X[p]][X[p - ROW - 1]];
+      v += W[X[p]][X[p - ROW]];
+      v += W[X[p]][X[p - ROW + 1]];
+      v += W[X[p]][X[p - 1]];
+      v += W[X[p]][X[p + 1]];
+      v += W[X[p]][X[p + ROW - 1]];
+      v += W[X[p]][X[p + ROW]];
+      v += W[X[p]][X[p + ROW + 1]];
       return v;
     };
-    constexpr int LOG_SIZE = 1 << 12;
-    static double log_[LOG_SIZE];
     for (int i = 0; i < LOG_SIZE; ++i) {
-      log_[i] = -5 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
+      log_d[i] = -5 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
     }
     while (true) {
-      double elapsed = timer.getElapsed();
-      if (elapsed > TIME_LIMIT) break;
-      for (int time = 0; time < 0x10000; ++time) {
-        int p1 = (get_random() % r + 1) * ROW + (get_random() % r + 1);
-        int p2 = (get_random() % r + 1) * ROW + (get_random() % r + 1);
-        if (p1 == p2) continue;
+      double time = TIME_LIMIT - timer.getElapsed();
+      if (time < 0) break;
+      for (int i = 0; i < LOG_SIZE; ++i) log_[i] = log_d[i] * time;
+      for (int t = 0; t < 0x10000; ++t) {
+        int p1 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
+        int p2 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
+        if (X[p1] == X[p2]) continue;
         int pv = value(p1) + value(p2);
-        swap(x[p1], x[p2]);
+        swap(X[p1], X[p2]);
         int nv = value(p1) + value(p2);
-        if (nv >= pv || (pv - nv) < log_[get_random() & (LOG_SIZE - 1)] *
-                                        (TIME_LIMIT - elapsed)) {
-        } else {
-          swap(x[p1], x[p2]);
-        }
+        if ((pv - nv) > log_[get_random() & (LOG_SIZE - 1)]) swap(X[p1], X[p2]);
       }
     }
   }
   {  // output
     for (int i = 0; i < MAX_V; ++i) {
-      if (x[i] < V) printf("%d %d\n", x[i] + 1, (i / ROW - 1) * KR + i % ROW);
+      if (X[i] < V) printf("%d %d\n", X[i] + 1, (i / ROW - 1) * KR + i % ROW);
     }
   }
 }
