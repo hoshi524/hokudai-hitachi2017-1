@@ -67,6 +67,7 @@ inline double get_random_double() { return (double)get_random() / UINT_MAX; }
 
 int V, E, KV, KE, KR;
 uint8_t W[500][500];
+uint8_t P[MAX_V];
 uint16_t X[MAX_V];
 constexpr int LOG_SIZE = 1 << 12;
 double log_d[LOG_SIZE];
@@ -111,6 +112,13 @@ int main() {
       v += W[X[p]][X[p + ROW + 1]];
       return v;
     };
+    memset(P, 0, sizeof(P));
+    for (int i = 1; i <= r; ++i) {
+      for (int j = 1; j <= r; ++j) {
+        int p = i * ROW + j;
+        P[p] = value(p);
+      }
+    }
     for (int i = 0; i < LOG_SIZE; ++i) {
       log_d[i] = -5 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
     }
@@ -122,10 +130,32 @@ int main() {
         int p1 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
         int p2 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
         if (X[p1] == X[p2]) continue;
-        int pv = value(p1) + value(p2);
+        int pv = P[p1] + P[p2];
         swap(X[p1], X[p2]);
-        int nv = value(p1) + value(p2);
-        if ((pv - nv) > log_[get_random() & (LOG_SIZE - 1)]) swap(X[p1], X[p2]);
+        int v1 = value(p1);
+        int v2 = value(p2);
+        if ((pv - v1 - v2) > log_[get_random() & (LOG_SIZE - 1)]) {
+          swap(X[p1], X[p2]);
+        } else {
+          auto diff = [&](int p, int n) {
+            auto set = [&](int t) {
+              P[t] -= W[X[p]][X[t]];
+              P[t] += W[X[n]][X[t]];
+            };
+            set(n - ROW - 1);
+            set(n - ROW);
+            set(n - ROW + 1);
+            set(n - 1);
+            set(n + 1);
+            set(n + ROW - 1);
+            set(n + ROW);
+            set(n + ROW + 1);
+          };
+          diff(p2, p1);
+          diff(p1, p2);
+          P[p1] = v1;
+          P[p2] = v2;
+        }
       }
     }
   }
