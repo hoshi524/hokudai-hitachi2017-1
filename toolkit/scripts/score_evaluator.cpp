@@ -129,6 +129,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  printf("%s - %s   [Score]/[Sum]: %7d/%7d\n", argv[1], argv[2], score, sum);
+  printf("%d\n", score);
+  // printf("%s - %s   [Score]/[Sum]: %7d/%7d\n", argv[1], argv[2], score, sum);
   return 0;
 }
