@@ -3,9 +3,9 @@ import subprocess
 
 def exec(command,graph,seed):
     subprocess.call('./out/graph_generator.out ./testcase/testcase {} {}'.format(graph,seed),shell=True)
-    start = time.clock()
+    start = time.time()
     subprocess.call('{} < ./testcase/testcase > ./testcase/result'.format(command),shell=True)
-    end = time.clock()
+    end = time.time()
     score = int(subprocess.check_output('./out/score_evaluator.out ./testcase/testcase ./testcase/result',shell=True))
     print('command : {}, graph : {}, seed : {}, score : {}'.format(command,graph,seed,score))
     return [score, end - start]
