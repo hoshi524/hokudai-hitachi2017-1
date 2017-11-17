@@ -64,7 +64,7 @@ inline unsigned get_random() {
 }
 
 int V, E, KV, KE, KR;
-uint8_t W[500][500];
+uint8_t W[512][512];
 uint8_t P[MAX_V];
 uint16_t X[MAX_V];
 constexpr int LOG_SIZE = 1 << 12;
