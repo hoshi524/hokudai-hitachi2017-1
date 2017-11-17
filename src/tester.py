@@ -26,12 +26,6 @@ for i in range(1000):
     score, ela = exec(test,0,i)
     test_sum += score
     test_time += ela
-    score, ela = exec(main,1,i)
-    main_sum += score
-    main_time += ela
-    score, ela = exec(test,1,i)
-    test_sum += score
-    test_time += ela
     print('main : {}'.format(main_sum))
     print('test : {}'.format(test_sum))
     print('main : {}'.format(main_time))

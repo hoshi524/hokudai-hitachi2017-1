@@ -54,7 +54,7 @@ inline unsigned long long int Timer::getCycle() {
 
 Timer timer;
 
-constexpr double TIME_LIMIT = 0.8;
+constexpr double TIME_LIMIT = 1.9;
 constexpr int ROW = 1 << 5;
 constexpr int MAX_V = ROW * ROW;
 
@@ -112,7 +112,7 @@ int main() {
       }
     }
     for (int i = 0; i < LOG_SIZE; ++i) {
-      log_d[i] = -5 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
+      log_d[i] = -6 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
     }
     while (true) {
       double time = TIME_LIMIT - timer.getElapsed();
