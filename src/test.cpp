@@ -63,8 +63,6 @@ inline unsigned get_random() {
   return y ^= (y ^= (y ^= y << 13) >> 17) << 5;
 }
 
-inline double get_random_double() { return (double)get_random() / UINT_MAX; }
-
 int V, E, KV, KE, KR;
 uint8_t W[500][500];
 uint8_t P[MAX_V];
@@ -93,8 +91,7 @@ int main() {
     KR = sqrt(KV);
   }
   {  // solve
-    int r = sqrt(V);
-    if (r * r < V) ++r;
+    int r = min(KR, (int)(sqrt(V * 1.2) + 0.9));
     int n = 0;
     for (int i = 0; i < MAX_V; ++i) X[i] = V;
     for (int i = 1; i <= r && n < V; ++i) {
