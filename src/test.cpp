@@ -112,7 +112,7 @@ int main() {
       }
     }
     for (int i = 0; i < LOG_SIZE; ++i) {
-      log_d[i] = -6 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
+      log_d[i] = -5 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
     }
     while (true) {
       double time = TIME_LIMIT - timer.getElapsed();
