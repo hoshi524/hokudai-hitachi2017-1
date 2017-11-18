@@ -133,7 +133,8 @@ int main() {
     while (true) {
       double time = TIME_LIMIT - timer.getElapsed();
       if (time < 0) break;
-      for (int i = 0; i < LOG_SIZE; ++i) log_[i] = min(20.0, log_d[i] * time);
+      for (int i = 0; i < LOG_SIZE; ++i)
+        log_[i] = min(20.0, round(log_d[i] * time));
       for (int t = 0; t < 0x10000; ++t) {
         int p1 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
         int p2 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
