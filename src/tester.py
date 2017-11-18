@@ -10,6 +10,7 @@ def exec(command,graph,seed):
     print('command : {}, graph : {}, seed : {}, score : {}'.format(command,graph,seed,score))
     return [score, end - start]
 
+subprocess.call('g++ --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3 -o out/graph_generator.out toolkit/scripts/graph_generator.cpp',shell=True)
 subprocess.call('g++ --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3 -o out/main.out src/main.cpp',shell=True)
 subprocess.call('g++ --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3 -o out/test.out src/test.cpp',shell=True)
 main = './out/main.out'
