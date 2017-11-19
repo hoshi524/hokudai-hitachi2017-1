@@ -10,7 +10,10 @@ def exec(command,graph,seed):
     print('command : {}, graph : {}, seed : {}, score : {}'.format(command,graph,seed,score))
     return [score, end - start]
 
+subprocess.call('mkdir out',shell=True)
+subprocess.call('mkdir testcase',shell=True)
 subprocess.call('g++-5 -std=gnu++1y -O2 -o out/graph_generator.out toolkit/scripts/graph_generator.cpp',shell=True)
+subprocess.call('g++-5 -std=gnu++1y -O2 -o out/score_evaluator.out toolkit/scripts/score_evaluator.cpp',shell=True)
 subprocess.call('g++-5 -std=gnu++1y -O2 -o out/main.out src/main.cpp',shell=True)
 subprocess.call('g++-5 -std=gnu++1y -O2 -o out/test.out src/test.cpp',shell=True)
 main = './out/main.out'

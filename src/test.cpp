@@ -67,7 +67,7 @@ int V, E, KV, KE, KR;
 uint8_t W[512][512];
 uint8_t P[MAX_V];
 uint16_t X[MAX_V];
-constexpr int LOG_SIZE = 1 << 12;
+constexpr int LOG_SIZE = 1 << 10;
 double log_d[LOG_SIZE];
 uint8_t log_[LOG_SIZE];
 
@@ -136,13 +136,14 @@ int main() {
       for (int i = 0; i < LOG_SIZE; ++i)
         log_[i] = min(20.0, round(log_d[i] * time));
       for (int t = 0; t < 0x10000; ++t) {
-        int p1 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
-        int p2 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
+        unsigned m = get_random();
+        int p1 = (((m >> 10) % r + 1) << 5) | ((m >> 15) % r + 1);
+        int p2 = (((m >> 20) % r + 1) << 5) | ((m >> 25) % r + 1);
         if (X[p1] == X[p2]) continue;
         int pv = P[p1] + P[p2];
         swap(X[p1], X[p2]);
         int v1 = value(p1), v2 = value(p2);
-        if ((pv - v1 - v2) > log_[get_random() & (LOG_SIZE - 1)]) {
+        if ((pv - v1 - v2) > log_[m & (LOG_SIZE - 1)]) {
           swap(X[p1], X[p2]);
         } else {
           diff(p2, p1);
