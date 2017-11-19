@@ -2,7 +2,6 @@ import time
 import subprocess
 
 def exec(command,graph,seed):
-    subprocess.call('./out/graph_generator.out ./testcase/testcase {} {}'.format(graph,seed),shell=True)
     start = time.time()
     subprocess.call('{} < ./testcase/testcase > ./testcase/result'.format(command),shell=True)
     end = time.time()
@@ -24,6 +23,7 @@ main_time = 0
 test_sum = 0
 test_time = 0
 for i in range(1000):
+    subprocess.call('./out/graph_generator.out ./testcase/testcase {} {}'.format(0,i),shell=True)
     score, ela = exec(main,0,i)
     main_sum += score
     main_time += ela
