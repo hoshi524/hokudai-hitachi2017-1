@@ -75,7 +75,8 @@ uint16_t best[MAX_KV];
 struct Node {
   int16_t pos;
   int16_t vertex;
-  int16_t value;
+  int16_t score;
+  int value;
 };
 Node state[MAX_KV][MAX_V];
 
@@ -138,7 +139,8 @@ int main() {
           for (int k = 0; k < V; ++k) {
             state[p][k].pos = p;
             state[p][k].vertex = k;
-            state[p][k].value = 0;
+            state[p][k].score = 0;
+            state[p][k].value = INT_MIN;
           }
         }
       }
@@ -146,20 +148,31 @@ int main() {
       auto update = [&](int n, int p) {
         if (X[p] != V) return;
         int value = -1;
+        auto add = [&](Node& n, int v, int u) {
+          if (u < V) {
+            int t = W[v][u];
+            if (t) {
+              n.score += t;
+              n.value += t << 4;
+            } else {
+              n.value--;
+            }
+          }
+        };
         if (ok[p]) {
           ok[p] = false;
           positions.emplace_back(p);
           for (int v : vertexes) {
-            int t = 0;
-            t += W[v][X[p - ROW - 1]];
-            t += W[v][X[p - ROW]];
-            t += W[v][X[p - ROW + 1]];
-            t += W[v][X[p - 1]];
-            t += W[v][X[p + 1]];
-            t += W[v][X[p + ROW - 1]];
-            t += W[v][X[p + ROW]];
-            t += W[v][X[p + ROW + 1]];
-            state[p][v].value = t;
+            state[p][v].score = 0;
+            state[p][v].value = 0;
+            add(state[p][v], v, X[p - ROW - 1]);
+            add(state[p][v], v, X[p - ROW]);
+            add(state[p][v], v, X[p - ROW + 1]);
+            add(state[p][v], v, X[p - 1]);
+            add(state[p][v], v, X[p + 1]);
+            add(state[p][v], v, X[p + ROW - 1]);
+            add(state[p][v], v, X[p + ROW]);
+            add(state[p][v], v, X[p + ROW + 1]);
             if (value < state[p][v].value) {
               value = state[p][v].value;
               bestVertex[p] = &state[p][v];
@@ -167,7 +180,7 @@ int main() {
           }
         } else {
           for (int v : vertexes) {
-            state[p][v].value += W[v][X[n]];
+            add(state[p][v], v, X[n]);
             if (value < state[p][v].value) {
               value = state[p][v].value;
               bestVertex[p] = &state[p][v];
@@ -190,20 +203,8 @@ int main() {
                 }
               }
             }
-            int t = bestVertex[p]->value << 4;
-            auto sub = [&](int q) {
-              if (X[q] < V && W[bestVertex[p]->vertex][X[q]] == 0) --t;
-            };
-            sub(p - ROW - 1);
-            sub(p - ROW);
-            sub(p - ROW + 1);
-            sub(p - 1);
-            sub(p + 1);
-            sub(p + ROW - 1);
-            sub(p + ROW);
-            sub(p + ROW + 1);
-            if (value < t) {
-              value = t;
+            if (value < bestVertex[p]->value) {
+              value = bestVertex[p]->value;
               n = bestVertex[p];
             }
           }
@@ -211,8 +212,8 @@ int main() {
         X[n->pos] = n->vertex;
         vertexes.erase(find(vertexes.begin(), vertexes.end(), n->vertex));
         positions.erase(find(positions.begin(), positions.end(), n->pos));
-        score += n->value;
-        for (int p : positions) state[p][n->vertex].value = -1;
+        score += n->score;
+        for (int p : positions) state[p][n->vertex].value = -100;
         update(n->pos, n->pos - ROW - 1);
         update(n->pos, n->pos - ROW);
         update(n->pos, n->pos - ROW + 1);
