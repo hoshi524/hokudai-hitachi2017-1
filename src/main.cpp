@@ -54,7 +54,7 @@ inline unsigned long long int Timer::getCycle() {
 
 Timer timer;
 
-constexpr double TIME_LIMIT = 1.9;
+constexpr double TIME_LIMIT = 1.9 * 2;
 constexpr int ROW = 1 << 5;
 constexpr int MAX_V = ROW * ROW;
 
@@ -67,11 +67,32 @@ int V, E, KV, KE, KR;
 uint8_t W[512][512];
 uint8_t P[MAX_V];
 uint16_t X[MAX_V];
-constexpr int LOG_SIZE = 1 << 12;
+constexpr int LOG_SIZE = 1 << 10;
 double log_d[LOG_SIZE];
 uint8_t log_[LOG_SIZE];
-constexpr static int dir[] = {-ROW - 1, -ROW,    -ROW + 1, -1,
-                              1,        ROW - 1, ROW,      ROW + 1};
+
+int value(int p) {
+  uint8_t* w = W[X[p]];
+  return w[X[p - ROW - 1]] + w[X[p - ROW]] + w[X[p - ROW + 1]] + w[X[p - 1]] +
+         w[X[p + 1]] + w[X[p + ROW - 1]] + w[X[p + ROW]] + w[X[p + ROW + 1]];
+}
+
+void diff(int p, int n) {
+  uint8_t* wp = W[X[p]];
+  uint8_t* wn = W[X[n]];
+  auto set = [&](int t) {
+    P[t] -= wp[X[t]];
+    P[t] += wn[X[t]];
+  };
+  set(n - ROW - 1);
+  set(n - ROW);
+  set(n - ROW + 1);
+  set(n - 1);
+  set(n + 1);
+  set(n + ROW - 1);
+  set(n + ROW);
+  set(n + ROW + 1);
+}
 
 int main() {
   {  // input
@@ -99,11 +120,6 @@ int main() {
         X[i * ROW + j] = n++;
       }
     }
-    auto value = [](int p) {
-      int v = 0;
-      for (int d : dir) v += W[X[p]][X[p + d]];
-      return v;
-    };
     memset(P, 0, sizeof(P));
     for (int i = 1; i <= r; ++i) {
       for (int j = 1; j <= r; ++j) {
@@ -117,24 +133,19 @@ int main() {
     while (true) {
       double time = TIME_LIMIT - timer.getElapsed();
       if (time < 0) break;
-      for (int i = 0; i < LOG_SIZE; ++i) log_[i] = min(20.0, log_d[i] * time);
+      for (int i = 0; i < LOG_SIZE; ++i)
+        log_[i] = min(20.0, round(log_d[i] * time));
       for (int t = 0; t < 0x10000; ++t) {
-        int p1 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
-        int p2 = ((get_random() % r + 1) << 5) | (get_random() % r + 1);
+        unsigned m = get_random();
+        int p1 = (((m >> 10) % r + 1) << 5) | ((m >> 15) % r + 1);
+        int p2 = (((m >> 20) % r + 1) << 5) | ((m >> 25) % r + 1);
         if (X[p1] == X[p2]) continue;
         int pv = P[p1] + P[p2];
         swap(X[p1], X[p2]);
         int v1 = value(p1), v2 = value(p2);
-        if ((pv - v1 - v2) > log_[get_random() & (LOG_SIZE - 1)]) {
+        if ((pv - v1 - v2) > log_[m & (LOG_SIZE - 1)]) {
           swap(X[p1], X[p2]);
         } else {
-          auto diff = [&](int p, int n) {
-            auto set = [&](int t) {
-              P[t] -= W[X[p]][X[t]];
-              P[t] += W[X[n]][X[t]];
-            };
-            for (int d : dir) set(n + d);
-          };
           diff(p2, p1);
           diff(p1, p2);
           P[p1] = v1;

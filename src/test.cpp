@@ -1,162 +1,155 @@
 #include <bits/stdc++.h>
-#include <sys/time.h>
 using namespace std;
 
-class Timer {
- public:
-  void restart();
-  double getElapsed();
-
-  Timer();
-
- private:
-  static double rdtsc_per_sec_inv;
-
-  double getTimeOfDay();
-  unsigned long long int getCycle();
-
-  double start_time;
-  unsigned long long int start_clock;
-};
-double Timer::rdtsc_per_sec_inv = -1;
-
-inline double Timer::getElapsed() {
-  if (rdtsc_per_sec_inv != -1)
-    return (double)(getCycle() - start_clock) * rdtsc_per_sec_inv;
-
-  const double RDTSC_MEASUREMENT_INTERVAL = 0.1;
-  double res = getTimeOfDay() - start_time;
-  if (res <= RDTSC_MEASUREMENT_INTERVAL) return res;
-
-  rdtsc_per_sec_inv = 1.0 / (getCycle() - start_clock);
-  rdtsc_per_sec_inv *= getTimeOfDay() - start_time;
-  return getElapsed();
-}
-
-inline void Timer::restart() {
-  start_time = getTimeOfDay();
-  start_clock = getCycle();
-}
-
-Timer::Timer() { restart(); }
-
-inline double Timer::getTimeOfDay() {
-  timeval tv;
-  gettimeofday(&tv, 0);
-  return tv.tv_sec + tv.tv_usec * 0.000001;
-}
-
-inline unsigned long long int Timer::getCycle() {
-  unsigned int low, high;
-  __asm__ volatile("rdtsc" : "=a"(low), "=d"(high));
-  return ((unsigned long long int)low) | ((unsigned long long int)high << 32);
-}
-
-Timer timer;
-
-constexpr double TIME_LIMIT = 1.9;
-constexpr int ROW = 1 << 5;
-constexpr int MAX_V = ROW * ROW;
-
-inline unsigned get_random() {
-  static unsigned y = 2463534242;
-  return y ^= (y ^= (y ^= y << 13) >> 17) << 5;
-}
+constexpr int ROW = 1 << 6;
+constexpr int MAX_V = 1 << 9;
+constexpr int MAX_KV = ROW * ROW;
 
 int V, E, KV, KE, KR;
-uint8_t W[512][512];
-uint8_t P[MAX_V];
-uint16_t X[MAX_V];
-constexpr int LOG_SIZE = 1 << 10;
-double log_d[LOG_SIZE];
-uint8_t log_[LOG_SIZE];
+uint8_t w[MAX_V][MAX_V];
+uint16_t x[MAX_KV];
+uint16_t best[MAX_KV];
 
-int value(int p) {
-  uint8_t* w = W[X[p]];
-  return w[X[p - ROW - 1]] + w[X[p - ROW]] + w[X[p - ROW + 1]] + w[X[p - 1]] +
-         w[X[p + 1]] + w[X[p + ROW - 1]] + w[X[p + ROW]] + w[X[p + ROW + 1]];
-}
-
-void diff(int p, int n) {
-  uint8_t* wp = W[X[p]];
-  uint8_t* wn = W[X[n]];
-  auto set = [&](int t) {
-    P[t] -= wp[X[t]];
-    P[t] += wn[X[t]];
-  };
-  set(n - ROW - 1);
-  set(n - ROW);
-  set(n - ROW + 1);
-  set(n - 1);
-  set(n + 1);
-  set(n + ROW - 1);
-  set(n + ROW);
-  set(n + ROW + 1);
-}
+struct Node {
+  int16_t pos;
+  int16_t vertex;
+  int16_t value;
+};
+Node state[MAX_KV][MAX_V];
 
 int main() {
   {  // input
-    memset(W, 0, sizeof(W));
+    memset(w, 0, sizeof(w));
     scanf("%d%d\n", &V, &E);
     int u, v, t;
     for (int i = 0; i < E; ++i) {
       scanf("%d%d%d\n", &u, &v, &t);
-      if (t) {
-        --u;
-        --v;
-        W[u][v] = t;
-        W[v][u] = t;
-      }
+      --u;
+      --v;
+      w[u][v] = t;
+      w[v][u] = t;
     }
     scanf("%d%d\n", &KV, &KE);
     KR = sqrt(KV);
   }
-  {  // solve
-    int r = min(KR, (int)(sqrt(V * 1.2) + 0.9));
-    int n = 0;
-    for (int i = 0; i < MAX_V; ++i) X[i] = V;
-    for (int i = 1; i <= r && n < V; ++i) {
-      for (int j = 1; j <= r && n < V; ++j) {
-        X[i * ROW + j] = n++;
-      }
-    }
-    memset(P, 0, sizeof(P));
-    for (int i = 1; i <= r; ++i) {
-      for (int j = 1; j <= r; ++j) {
-        int p = i * ROW + j;
-        P[p] = value(p);
-      }
-    }
-    for (int i = 0; i < LOG_SIZE; ++i) {
-      log_d[i] = -5 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
-    }
-    while (true) {
-      double time = TIME_LIMIT - timer.getElapsed();
-      if (time < 0) break;
-      for (int i = 0; i < LOG_SIZE; ++i)
-        log_[i] = min(20.0, round(log_d[i] * time));
-      for (int t = 0; t < 0x10000; ++t) {
-        unsigned m = get_random();
-        int p1 = (((m >> 10) % r + 1) << 5) | ((m >> 15) % r + 1);
-        int p2 = (((m >> 20) % r + 1) << 5) | ((m >> 25) % r + 1);
-        if (X[p1] == X[p2]) continue;
-        int pv = P[p1] + P[p2];
-        swap(X[p1], X[p2]);
-        int v1 = value(p1), v2 = value(p2);
-        if ((pv - v1 - v2) > log_[m & (LOG_SIZE - 1)]) {
-          swap(X[p1], X[p2]);
-        } else {
-          diff(p2, p1);
-          diff(p1, p2);
-          P[p1] = v1;
-          P[p2] = v2;
+  {  // hill climbing
+    Node* bestVertex[MAX_KV];
+    bool ok[MAX_KV];
+    memset(ok, false, sizeof(ok));
+    vector<int16_t> vertexes(MAX_V);
+    vector<int16_t> positions(MAX_KV);
+
+    int bestScore = 0;
+    mt19937 engine(2463534242);
+    for (int time = 0; time < 100; ++time) {
+      vertexes.clear();
+      positions.clear();
+      for (int i = 0; i < MAX_KV; ++i) x[i] = V;
+      for (int i = 0; i < V; ++i) vertexes.emplace_back(i);
+      shuffle(vertexes.begin(), vertexes.end(), engine);
+      for (int i = 1; i <= KR; ++i) {
+        for (int j = 1; j <= KR; ++j) {
+          int p = i * ROW + j;
+          ok[p] = true;
+          bestVertex[p] = &state[p][vertexes[0]];
+          for (int k = 0; k < V; ++k) {
+            state[p][k].pos = p;
+            state[p][k].vertex = k;
+            state[p][k].value = 0;
+          }
         }
       }
+      int score = 0;
+      auto update = [&](int n, int p) {
+        if (x[p] != V) return;
+        int value = -1;
+        if (ok[p]) {
+          ok[p] = false;
+          positions.emplace_back(p);
+          for (int v : vertexes) {
+            int t = 0;
+            t += w[v][x[p - ROW - 1]];
+            t += w[v][x[p - ROW]];
+            t += w[v][x[p - ROW + 1]];
+            t += w[v][x[p - 1]];
+            t += w[v][x[p + 1]];
+            t += w[v][x[p + ROW - 1]];
+            t += w[v][x[p + ROW]];
+            t += w[v][x[p + ROW + 1]];
+            state[p][v].value = t;
+            if (value < state[p][v].value) {
+              value = state[p][v].value;
+              bestVertex[p] = &state[p][v];
+            }
+          }
+        } else {
+          for (int v : vertexes) {
+            state[p][v].value += w[v][x[n]];
+            if (value < state[p][v].value) {
+              value = state[p][v].value;
+              bestVertex[p] = &state[p][v];
+            }
+          }
+        }
+      };
+      update(-1, (KR / 2 + 1) * ROW + (KR / 2 + 1));
+      for (int i = 0; i < V; ++i) {
+        Node* n = bestVertex[positions[0]];
+        {
+          int value = INT_MIN;
+          for (int p : positions) {
+            if (bestVertex[p]->value < 0) {
+              int value = INT_MIN;
+              for (int v : vertexes) {
+                if (value < state[p][v].value) {
+                  value = state[p][v].value;
+                  bestVertex[p] = &state[p][v];
+                }
+              }
+            }
+            int t = bestVertex[p]->value << 4;
+            auto sub = [&](int q) {
+              if (x[q] < V && w[bestVertex[p]->vertex][x[q]] == 0) --t;
+            };
+            sub(p - ROW - 1);
+            sub(p - ROW);
+            sub(p - ROW + 1);
+            sub(p - 1);
+            sub(p + 1);
+            sub(p + ROW - 1);
+            sub(p + ROW);
+            sub(p + ROW + 1);
+            if (value < t) {
+              value = t;
+              n = bestVertex[p];
+            }
+          }
+        }
+        x[n->pos] = n->vertex;
+        vertexes.erase(find(vertexes.begin(), vertexes.end(), n->vertex));
+        positions.erase(find(positions.begin(), positions.end(), n->pos));
+        score += n->value;
+        for (int p : positions) state[p][n->vertex].value = -1;
+        update(n->pos, n->pos - ROW - 1);
+        update(n->pos, n->pos - ROW);
+        update(n->pos, n->pos - ROW + 1);
+        update(n->pos, n->pos - 1);
+        update(n->pos, n->pos + 1);
+        update(n->pos, n->pos + ROW - 1);
+        update(n->pos, n->pos + ROW);
+        update(n->pos, n->pos + ROW + 1);
+      }
+      if (bestScore < score) {
+        bestScore = score;
+        memcpy(best, x, sizeof(x));
+      }
     }
+    // cerr << "bestScore : " << bestScore << endl;
   }
   {  // output
-    for (int i = 0; i < MAX_V; ++i) {
-      if (X[i] < V) printf("%d %d\n", X[i] + 1, (i / ROW - 1) * KR + i % ROW);
+    for (int i = 0; i < MAX_KV; ++i) {
+      if (best[i] < V)
+        printf("%d %d\n", best[i] + 1, (i / ROW - 1) * KR + i % ROW);
     }
   }
 }
