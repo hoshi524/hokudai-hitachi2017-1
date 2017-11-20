@@ -54,7 +54,7 @@ inline unsigned long long int Timer::getCycle() {
 
 Timer timer;
 
-constexpr double TIME_LIMIT = 1.9 * 2;
+constexpr double TIME_LIMIT = 1.9;
 constexpr int ROW = 1 << 5;
 constexpr int MAX_V = ROW * ROW;
 
