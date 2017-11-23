@@ -119,6 +119,13 @@ int main() {
     KR = sqrt(KV);
   }
   {  // Hill Climbing
+    int wsum[MAX_KV];
+    memset(wsum, 0, sizeof(wsum));
+    for (int i = 0; i < V; ++i) {
+      for (int j = 0; j < V; ++j) {
+        wsum[i] += W[i][j];
+      }
+    }
     Node* bestVertex[MAX_KV];
     bool ok[MAX_KV];
     memset(ok, false, sizeof(ok));
@@ -151,16 +158,16 @@ int main() {
             int t = W[v][u];
             if (t) {
               n.score += t;
-              n.value += t << 10;
+              n.value += t << 14;
             } else {
-              n.value -= 1 << 4;
+              n.value -= 1 << 10;
             }
           }
         };
         for (int v : vertexes) {
           if (ok[p]) {
             state[p][v].score = 0;
-            state[p][v].value = 0;
+            state[p][v].value = wsum[v];
             add(state[p][v], v, X[p - ROW - 1]);
             add(state[p][v], v, X[p - ROW]);
             add(state[p][v], v, X[p - ROW + 1]);
@@ -172,7 +179,7 @@ int main() {
           } else {
             add(state[p][v], v, X[n]);
           }
-          int t = state[p][v].value + (get_random() & ((1 << 4) - 1));
+          int t = state[p][v].value + (get_random() & ((1 << 10) - 1));
           if (value < t) {
             value = t;
             bestVertex[p] = &state[p][v];
@@ -197,7 +204,7 @@ int main() {
               }
             }
           }
-          int t = bestVertex[p]->value + (get_random() & ((1 << 4) - 1));
+          int t = bestVertex[p]->value + (get_random() & ((1 << 10) - 1));
           if (value < t) {
             value = t;
             n = bestVertex[p];
