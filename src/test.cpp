@@ -60,7 +60,7 @@ inline unsigned get_random() {
 }
 
 constexpr double TIME_LIMIT = 1.9;
-constexpr int ROW = 1 << 6;
+constexpr int ROW = 1 << 5;
 constexpr int MAX_V = 1 << 9;
 constexpr int MAX_KV = ROW * ROW;
 
@@ -118,9 +118,8 @@ int main() {
     scanf("%d%d\n", &KV, &KE);
     KR = sqrt(KV);
   }
-  {  // solve
-    // Hill Climbing
-    int R = min(KR, (int)(sqrt(V * 1.2) + 0.9));
+  int R = min(KR, (int)(sqrt(V * 1.2) + 0.9));
+  {  // Hill Climbing
     int wsum[MAX_KV];
     memset(wsum, 0, sizeof(wsum));
     for (int i = 0; i < V; ++i) {
@@ -231,7 +230,8 @@ int main() {
         memcpy(best, X, sizeof(X));
       }
     }
-    // Simulated Annealing
+  }
+  {  // Simulated Annealing
     constexpr int LOG_SIZE = 1 << 10;
     double log_d[LOG_SIZE];
     uint8_t log_[LOG_SIZE];
@@ -253,13 +253,13 @@ int main() {
         log_[i] = min(20.0, round(log_d[i] * time));
       for (int t = 0; t < 0x10000; ++t) {
         unsigned m = get_random();
-        int p1 = (((m >> 0) % R + 1) << 6) | ((m >> 6) % R + 1);
-        int p2 = (((m >> 12) % R + 1) << 6) | ((m >> 18) % R + 1);
+        int p1 = (((m >> 10) % R + 1) << 5) | ((m >> 15) % R + 1);
+        int p2 = (((m >> 20) % R + 1) << 5) | ((m >> 25) % R + 1);
         if (X[p1] == X[p2]) continue;
         int pv = P[p1] + P[p2];
         swap(X[p1], X[p2]);
         int v1 = value(p1), v2 = value(p2);
-        if ((pv - v1 - v2) > log_[get_random() & (LOG_SIZE - 1)]) {
+        if ((pv - v1 - v2) > log_[m & (LOG_SIZE - 1)]) {
           swap(X[p1], X[p2]);
         } else {
           diff(p2, p1);
