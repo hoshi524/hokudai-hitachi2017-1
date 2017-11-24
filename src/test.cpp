@@ -118,7 +118,9 @@ int main() {
     scanf("%d%d\n", &KV, &KE);
     KR = sqrt(KV);
   }
-  {  // Hill Climbing
+  {  // solve
+    // Hill Climbing
+    int R = min(KR, (int)(sqrt(V * 1.2) + 0.9));
     int wsum[MAX_KV];
     memset(wsum, 0, sizeof(wsum));
     for (int i = 0; i < V; ++i) {
@@ -136,8 +138,8 @@ int main() {
       positions.clear();
       for (int i = 0; i < MAX_KV; ++i) X[i] = V;
       for (int i = 0; i < V; ++i) vertexes.emplace_back(i);
-      for (int i = 1; i <= KR; ++i) {
-        for (int j = 1; j <= KR; ++j) {
+      for (int i = 1; i <= R; ++i) {
+        for (int j = 1; j <= R; ++j) {
           int p = i * ROW + j;
           ok[p] = true;
           bestVertex[p] = &state[p][vertexes[0]];
@@ -190,7 +192,7 @@ int main() {
           positions.emplace_back(p);
         }
       };
-      update(-1, (KR / 2 + 1) * ROW + (KR / 2 + 1));
+      update(-1, (R / 2 + 1) * ROW + (R / 2 + 1));
       for (int i = 0; i < V; ++i) {
         Node* n = bestVertex[positions[0]];
         int value = INT_MIN;
@@ -228,6 +230,56 @@ int main() {
         bestScore = score;
         memcpy(best, X, sizeof(X));
       }
+    }
+    // Simulated Annealing
+    constexpr int LOG_SIZE = 1 << 10;
+    double log_d[LOG_SIZE];
+    uint8_t log_[LOG_SIZE];
+    memcpy(X, best, sizeof(X));
+    memset(P, 0, sizeof(P));
+    for (int i = 1; i <= R; ++i) {
+      for (int j = 1; j <= R; ++j) {
+        int p = i * ROW + j;
+        P[p] = value(p);
+      }
+    }
+    for (int i = 0; i < LOG_SIZE; ++i) {
+      log_d[i] = -4 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
+    }
+    while (true) {
+      double time = TIME_LIMIT - timer.getElapsed();
+      if (time < 0) break;
+      for (int i = 0; i < LOG_SIZE; ++i)
+        log_[i] = min(20.0, round(log_d[i] * time));
+      for (int t = 0; t < 0x10000; ++t) {
+        unsigned m = get_random();
+        int p1 = (((m >> 0) % R + 1) << 6) | ((m >> 6) % R + 1);
+        int p2 = (((m >> 12) % R + 1) << 6) | ((m >> 18) % R + 1);
+        if (X[p1] == X[p2]) continue;
+        int pv = P[p1] + P[p2];
+        swap(X[p1], X[p2]);
+        int v1 = value(p1), v2 = value(p2);
+        if ((pv - v1 - v2) > log_[get_random() & (LOG_SIZE - 1)]) {
+          swap(X[p1], X[p2]);
+        } else {
+          diff(p2, p1);
+          diff(p1, p2);
+          P[p1] = v1;
+          P[p2] = v2;
+        }
+      }
+    }
+    int score = 0;
+    for (int i = 1; i <= R; ++i) {
+      for (int j = 1; j <= R; ++j) {
+        score += value(i * ROW + j);
+      }
+    }
+    score /= 2;
+    // cerr << bestScore << " " << score << endl;
+    if (bestScore < score) {
+      bestScore = score;
+      memcpy(best, X, sizeof(X));
     }
   }
   {  // output
