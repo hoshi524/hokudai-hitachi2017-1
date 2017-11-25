@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
   if (case_type == 0) {
     // random graph
     V = rnd.NextInt(MIN_V, MAX_V);
-    E = rnd.NextInt(V - 1, std::min(V * (V - 1) / 2, MAX_E));
+    E = rnd.NextInt(std::max(V - 1, MIN_E), std::min(V * (V - 1) / 2, MAX_E));
     gen_randomgraph(fp, V, E, MIN_C, MAX_C, seed);
   } else if (case_type == 1) {
     // full graph
