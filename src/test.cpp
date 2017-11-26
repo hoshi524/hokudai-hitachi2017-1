@@ -243,8 +243,11 @@ int main() {
         P[p] = value(p);
       }
     }
-    for (int i = 0; i < LOG_SIZE; ++i) {
-      log_d[i] = -4 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
+    {
+      double x = min(4.0, 1.0 + 0.5 * E / V);
+      for (int i = 0; i < LOG_SIZE; ++i) {
+        log_d[i] = -1 * x * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
+      }
     }
     while (true) {
       double time = TIME_LIMIT - timer.getElapsed();
