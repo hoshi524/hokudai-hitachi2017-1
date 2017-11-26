@@ -270,11 +270,7 @@ int main() {
       }
     }
     int score = 0;
-    for (int i = 1; i <= R; ++i) {
-      for (int j = 1; j <= R; ++j) {
-        score += value(i * ROW + j);
-      }
-    }
+    for (int i = 0; i < MAX_KV; ++i) score += P[i];
     score /= 2;
     // cerr << bestScore << " " << score << endl;
     if (bestScore < score) {
