@@ -54,22 +54,31 @@ inline unsigned long long int Timer::getCycle() {
 
 Timer timer;
 
-constexpr double TIME_LIMIT = 1.9;
-constexpr int ROW = 1 << 5;
-constexpr int MAX_V = ROW * ROW;
-
 inline unsigned get_random() {
   static unsigned y = 2463534242;
   return y ^= (y ^= (y ^= y << 13) >> 17) << 5;
 }
 
+constexpr double TIME_LIMIT = 1.9;
+constexpr int ROW = 1 << 5;
+constexpr int MAX_V = 1 << 9;
+constexpr int MAX_KV = ROW * ROW;
+
 int V, E, KV, KE, KR;
-uint8_t W[512][512];
-uint8_t P[MAX_V];
-uint16_t X[MAX_V];
-constexpr int LOG_SIZE = 1 << 10;
-double log_d[LOG_SIZE];
-uint8_t log_[LOG_SIZE];
+uint8_t W[MAX_V][MAX_V];
+uint8_t P[MAX_KV];
+uint16_t X[MAX_KV];
+
+int bestScore = 0;
+uint16_t best[MAX_KV];
+
+struct Node {
+  int16_t pos;
+  int16_t vertex;
+  int16_t score;
+  int value;
+};
+Node state[MAX_KV][MAX_V];
 
 int value(int p) {
   uint8_t* w = W[X[p]];
@@ -101,34 +110,144 @@ int main() {
     int u, v, t;
     for (int i = 0; i < E; ++i) {
       scanf("%d%d%d\n", &u, &v, &t);
-      if (t) {
-        --u;
-        --v;
-        W[u][v] = t;
-        W[v][u] = t;
-      }
+      --u;
+      --v;
+      W[u][v] = t;
+      W[v][u] = t;
     }
     scanf("%d%d\n", &KV, &KE);
     KR = sqrt(KV);
   }
-  {  // solve
-    int r = min(KR, (int)(sqrt(V * 1.2) + 0.9));
-    int n = 0;
-    for (int i = 0; i < MAX_V; ++i) X[i] = V;
-    for (int i = 1; i <= r && n < V; ++i) {
-      for (int j = 1; j <= r && n < V; ++j) {
-        X[i * ROW + j] = n++;
+  int R = min(KR, (int)(sqrt(V * 1.2) + 0.9));
+  {  // Hill Climbing
+    int wsum[MAX_KV];
+    memset(wsum, 0, sizeof(wsum));
+    for (int i = 0; i < V; ++i) {
+      for (int j = 0; j < V; ++j) {
+        wsum[i] += W[i][j];
       }
     }
+    Node* bestVertex[MAX_KV];
+    bool ok[MAX_KV];
+    memset(ok, false, sizeof(ok));
+    vector<int16_t> vertexes(MAX_V);
+    vertexes.clear();
+    vector<int16_t> positions(MAX_KV);
+    for (int time = 0; time < 100; ++time) {
+      positions.clear();
+      for (int i = 0; i < MAX_KV; ++i) X[i] = V;
+      for (int i = 0; i < V; ++i) vertexes.emplace_back(i);
+      for (int i = 1; i <= R; ++i) {
+        for (int j = 1; j <= R; ++j) {
+          int p = i * ROW + j;
+          ok[p] = true;
+          bestVertex[p] = &state[p][vertexes[0]];
+          for (int k = 0; k < V; ++k) {
+            state[p][k].pos = p;
+            state[p][k].vertex = k;
+            state[p][k].score = 0;
+            state[p][k].value = INT_MIN;
+          }
+        }
+      }
+      int score = 0;
+      auto update = [&](int n, int p) {
+        if (X[p] != V) return;
+        int value = -1;
+        auto add = [&](Node& n, int v, int u) {
+          if (u < V) {
+            int t = W[v][u];
+            if (t) {
+              n.score += t;
+              n.value += t << 14;
+            } else {
+              n.value -= 1 << 10;
+            }
+          }
+        };
+        for (int v : vertexes) {
+          if (ok[p]) {
+            state[p][v].score = 0;
+            state[p][v].value = wsum[v];
+            add(state[p][v], v, X[p - ROW - 1]);
+            add(state[p][v], v, X[p - ROW]);
+            add(state[p][v], v, X[p - ROW + 1]);
+            add(state[p][v], v, X[p - 1]);
+            add(state[p][v], v, X[p + 1]);
+            add(state[p][v], v, X[p + ROW - 1]);
+            add(state[p][v], v, X[p + ROW]);
+            add(state[p][v], v, X[p + ROW + 1]);
+          } else {
+            add(state[p][v], v, X[n]);
+          }
+          int t = state[p][v].value + (get_random() & ((1 << 10) - 1));
+          if (value < t) {
+            value = t;
+            bestVertex[p] = &state[p][v];
+          }
+        }
+        if (ok[p]) {
+          ok[p] = false;
+          positions.emplace_back(p);
+        }
+      };
+      update(-1, (R / 2 + 1) * ROW + (R / 2 + 1));
+      for (int i = 0; i < V; ++i) {
+        Node* n = bestVertex[positions[0]];
+        int value = INT_MIN;
+        for (int p : positions) {
+          if (bestVertex[p]->value < 0) {
+            int value = INT_MIN;
+            for (int v : vertexes) {
+              if (value < state[p][v].value) {
+                value = state[p][v].value;
+                bestVertex[p] = &state[p][v];
+              }
+            }
+          }
+          int t = bestVertex[p]->value + (get_random() & ((1 << 10) - 1));
+          if (value < t) {
+            value = t;
+            n = bestVertex[p];
+          }
+        }
+        X[n->pos] = n->vertex;
+        vertexes.erase(find(vertexes.begin(), vertexes.end(), n->vertex));
+        positions.erase(find(positions.begin(), positions.end(), n->pos));
+        score += n->score;
+        for (int p : positions) state[p][n->vertex].value = -1000000;
+        update(n->pos, n->pos - ROW - 1);
+        update(n->pos, n->pos - ROW);
+        update(n->pos, n->pos - ROW + 1);
+        update(n->pos, n->pos - 1);
+        update(n->pos, n->pos + 1);
+        update(n->pos, n->pos + ROW - 1);
+        update(n->pos, n->pos + ROW);
+        update(n->pos, n->pos + ROW + 1);
+      }
+      if (bestScore < score) {
+        bestScore = score;
+        memcpy(best, X, sizeof(X));
+      }
+    }
+  }
+  {  // Simulated Annealing
+    constexpr int LOG_SIZE = 1 << 10;
+    double log_d[LOG_SIZE];
+    uint8_t log_[LOG_SIZE];
+    memcpy(X, best, sizeof(X));
     memset(P, 0, sizeof(P));
-    for (int i = 1; i <= r; ++i) {
-      for (int j = 1; j <= r; ++j) {
+    for (int i = 1; i <= R; ++i) {
+      for (int j = 1; j <= R; ++j) {
         int p = i * ROW + j;
         P[p] = value(p);
       }
     }
-    for (int i = 0; i < LOG_SIZE; ++i) {
-      log_d[i] = -5 * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
+    {
+      double x = min(4.0, 1.0 + 0.5 * E / V);
+      for (int i = 0; i < LOG_SIZE; ++i) {
+        log_d[i] = -1 * x * log((i + 0.5) / LOG_SIZE) / TIME_LIMIT;
+      }
     }
     while (true) {
       double time = TIME_LIMIT - timer.getElapsed();
@@ -137,8 +256,8 @@ int main() {
         log_[i] = min(20.0, round(log_d[i] * time));
       for (int t = 0; t < 0x10000; ++t) {
         unsigned m = get_random();
-        int p1 = (((m >> 10) % r + 1) << 5) | ((m >> 15) % r + 1);
-        int p2 = (((m >> 20) % r + 1) << 5) | ((m >> 25) % r + 1);
+        int p1 = (((m >> 10) % R + 1) << 5) | ((m >> 15) % R + 1);
+        int p2 = (((m >> 20) % R + 1) << 5) | ((m >> 25) % R + 1);
         if (X[p1] == X[p2]) continue;
         int pv = P[p1] + P[p2];
         swap(X[p1], X[p2]);
@@ -153,10 +272,19 @@ int main() {
         }
       }
     }
+    int score = 0;
+    for (int i = 0; i < MAX_KV; ++i) score += P[i];
+    score /= 2;
+    // cerr << bestScore << " " << score << endl;
+    if (bestScore < score) {
+      bestScore = score;
+      memcpy(best, X, sizeof(X));
+    }
   }
   {  // output
-    for (int i = 0; i < MAX_V; ++i) {
-      if (X[i] < V) printf("%d %d\n", X[i] + 1, (i / ROW - 1) * KR + i % ROW);
+    for (int i = 0; i < MAX_KV; ++i) {
+      if (best[i] < V)
+        printf("%d %d\n", best[i] + 1, (i / ROW - 1) * KR + i % ROW);
     }
   }
 }
