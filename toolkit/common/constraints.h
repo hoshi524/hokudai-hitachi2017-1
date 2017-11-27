@@ -1,5 +1,5 @@
 // G
-const int MIN_V = 10;
+const int MIN_V = 50;
 const int MAX_V = 500;
 
 const int MIN_E = 1;
