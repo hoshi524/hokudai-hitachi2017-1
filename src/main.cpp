@@ -121,16 +121,7 @@ int main() {
   }
   int R = min(KR, ROW - 2);
   {  // Hill Climbing
-    int wsum[MAX_KV];
-    memset(wsum, 0, sizeof(wsum));
-    for (int i = 0; i < V; ++i) {
-      for (int j = 0; j < V; ++j) {
-        wsum[i] += W[i][j];
-      }
-    }
     Node* bestVertex[MAX_KV];
-    bool ok[MAX_KV];
-    memset(ok, false, sizeof(ok));
     vector<int16_t> vertexes(MAX_V);
     vertexes.clear();
     vector<int16_t> positions(MAX_KV);
@@ -141,7 +132,6 @@ int main() {
       for (int i = 1; i <= R; ++i) {
         for (int j = 1; j <= R; ++j) {
           int p = i * ROW + j;
-          ok[p] = true;
           X[p] = V;
           bestVertex[p] = &state[p][vertexes[0]];
           for (int k = 0; k < V; ++k) {
@@ -154,7 +144,7 @@ int main() {
       }
       int score = 0;
       auto update = [&](int n, int p) {
-        if (X[p] != V) return;
+        if (X[p] < V || X[p] == WALL) return;
         int value = -1;
         auto add = [&](Node& n, int v, int u) {
           if (u < V) {
@@ -168,9 +158,9 @@ int main() {
           }
         };
         for (int v : vertexes) {
-          if (ok[p]) {
+          if (X[p] == V) {
             state[p][v].score = 0;
-            state[p][v].value = wsum[v];
+            state[p][v].value = 0;
             add(state[p][v], v, X[p - ROW - 1]);
             add(state[p][v], v, X[p - ROW]);
             add(state[p][v], v, X[p - ROW + 1]);
@@ -188,8 +178,8 @@ int main() {
             bestVertex[p] = &state[p][v];
           }
         }
-        if (ok[p]) {
-          ok[p] = false;
+        if (X[p] == V) {
+          ++X[p];
           positions.emplace_back(p);
         }
       };
