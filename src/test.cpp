@@ -122,8 +122,6 @@ int main() {
   int R = min(KR, ROW - 2);
   {  // Hill Climbing
     Node* bestVertex[MAX_KV];
-    bool ok[MAX_KV];
-    memset(ok, false, sizeof(ok));
     vector<int16_t> vertexes(MAX_V);
     vertexes.clear();
     vector<int16_t> positions(MAX_KV);
@@ -134,7 +132,6 @@ int main() {
       for (int i = 1; i <= R; ++i) {
         for (int j = 1; j <= R; ++j) {
           int p = i * ROW + j;
-          ok[p] = true;
           X[p] = V;
           bestVertex[p] = &state[p][vertexes[0]];
           for (int k = 0; k < V; ++k) {
@@ -147,7 +144,7 @@ int main() {
       }
       int score = 0;
       auto update = [&](int n, int p) {
-        if (X[p] != V) return;
+        if (X[p] < V || X[p] == WALL) return;
         int value = -1;
         auto add = [&](Node& n, int v, int u) {
           if (u < V) {
@@ -161,7 +158,7 @@ int main() {
           }
         };
         for (int v : vertexes) {
-          if (ok[p]) {
+          if (X[p] == V) {
             state[p][v].score = 0;
             state[p][v].value = 0;
             add(state[p][v], v, X[p - ROW - 1]);
@@ -181,8 +178,8 @@ int main() {
             bestVertex[p] = &state[p][v];
           }
         }
-        if (ok[p]) {
-          ok[p] = false;
+        if (X[p] == V) {
+          ++X[p];
           positions.emplace_back(p);
         }
       };
@@ -227,7 +224,7 @@ int main() {
     }
   }
   {  // Simulated Annealing
-    constexpr int LOG_SIZE = 1 << 10;
+    constexpr int LOG_SIZE = 1 << 9;
     double log_d[LOG_SIZE];
     uint8_t log_[LOG_SIZE];
     memcpy(X, best, sizeof(X));
@@ -263,16 +260,16 @@ int main() {
         log_[i] = min(20.0, round(log_d[i] * time));
       for (int t = 0; t < 0x10000; ++t) {
         unsigned m = get_random();
-        int x1 = (m >> 13) % V;
+        int x1 = (m >> 23) % V;
         int p1 = POS[x1];
-        unsigned r = get_random() & ((1 << 11) - 1);
+        unsigned r = m & ((1 << 11) - 1);
         int x2 = SV[x1][(V * r * r) >> 22];
-        int p2 = POS[x2] + DIR[(m >> 10) & ((1 << 3) - 1)];
+        int p2 = POS[x2] + DIR[(m >> 11) & ((1 << 3) - 1)];
         if (X[p2] == WALL) continue;
         int pv = P[p1] + P[p2];
         swap(X[p1], X[p2]);
         int v1 = value(p1), v2 = value(p2);
-        if ((pv - v1 - v2) > log_[m & (LOG_SIZE - 1)]) {
+        if ((pv - v1 - v2) > log_[(m >> 14) & (LOG_SIZE - 1)]) {
           swap(X[p1], X[p2]);
         } else {
           diff(p2, p1);
