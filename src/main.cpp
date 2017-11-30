@@ -263,6 +263,7 @@ int main() {
       sort(SV[i], SV[i] + V,
            [i](uint16_t& a, uint16_t& b) { return W[i][a] > W[i][b]; });
     }
+    int cs = bestScore;
     while (true) {
       double time = TIME_LIMIT - timer.getElapsed();
       if (time < 0) break;
@@ -279,7 +280,8 @@ int main() {
         int pv = P[p1] + P[p2];
         swap(X[p1], X[p2]);
         int v1 = value(p1), v2 = value(p2);
-        if ((pv - v1 - v2) > log_[m & (LOG_SIZE - 1)]) {
+        int d = pv - v1 - v2;
+        if (d > log_[m & (LOG_SIZE - 1)]) {
           swap(X[p1], X[p2]);
         } else {
           diff(p2, p1);
@@ -288,15 +290,13 @@ int main() {
           P[p2] = v2;
           POS[X[p1]] = p1;
           POS[X[p2]] = p2;
+          cs -= d;
+          if (bestScore < cs) {
+            bestScore = cs;
+            memcpy(best, X, sizeof(X));
+          }
         }
       }
-    }
-    int score = 0;
-    for (int i = 0; i < MAX_KV; ++i) score += P[i];
-    score /= 2;
-    if (bestScore < score) {
-      bestScore = score;
-      memcpy(best, X, sizeof(X));
     }
   }
   {  // output
