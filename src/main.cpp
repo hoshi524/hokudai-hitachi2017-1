@@ -273,8 +273,7 @@ int main() {
         unsigned m = get_random();
         int x1 = (m >> 13) % V;
         int p1 = POS[x1];
-        unsigned r = get_random() & ((1 << 11) - 1);
-        int x2 = SV[x1][(V * r * r) >> 22];
+        int x2 = SV[x1][get_random() % (V >> 4)];
         int p2 = POS[x2] + DIR[(m >> 10) & ((1 << 3) - 1)];
         if (X[p2] == WALL) continue;
         int pv = P[p1] + P[p2];
